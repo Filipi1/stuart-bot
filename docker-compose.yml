@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  stuart-bot:
+    image: <DOCKER_REPO>:${IMAGE_TAG}
+    container_name: dev_back
+    ports:
+      - <HOST_PORT>:<CONTAINER_PORT>
+  stuart-db:
+    image: mysql:5.7
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_USER: root
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: db_stuart
+      MYSQL_PASSWORD: secret

@@ -1,0 +1,8 @@
+services:
+  stuart-bot-prod:
+    build: 
+      context: .
+    image: stuart-bot
+    container_name: stuart-bot-system
+    ports:
+      - 3000:3000
