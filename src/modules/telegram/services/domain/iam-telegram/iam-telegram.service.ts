@@ -6,6 +6,7 @@ import { LoggerService } from 'src/modules/shared/services/logger/logger.service
 import { TelegramProviders } from 'src/modules/telegram/enums/telegram-providers.enum';
 import { TelegramCommand } from 'src/modules/telegram/interfaces/telegram-command.interface';
 import { RandomMemeGetterService } from 'src/modules/meme/services/domain/random-meme-getter/random-meme-getter.service';
+import { DeniedMessages } from 'src/modules/bot/utils/denied-messages.utils';
 
 export interface IamTelegramResponse {
     imageUrl: string
@@ -23,21 +24,37 @@ export class IamTelegramService implements TelegramCommand {
         this.loggerService.setContext(IamTelegramService.name)
     }
 
+    protected buildMessage(meme: MemeEntity) : string {
+        const completeTitle = `⭐ Você é ||*${meme.title}*||`
+        const completeDescription = meme.description ? `_${meme.description}_` : ""
+        const drawTimesText = `🙎🏾 Personificou *${meme.drawnTimes}* pessoa${meme.drawnTimes > 1 ? "s" : ""}`
+        return `\n\n${completeTitle}\n\n${completeDescription}\n\n${drawTimesText}`
+            .replaceAll("!", "/!")
+    }
+
     async execute(message: Message) : Promise<IamTelegramResponse> {
-        const randomMeme = await this.randomMemeGetterService.execute()
-        if (!randomMeme) {
-            await this.telegramBot.sendMessage(message.chat.id, `Ih, ainda não tenho memes! Por enquanto eu ainda não posso criar memes por aqui. Mas dá uma passada lá no Discord e cria uns memes por lá! Quem sabe não aparece aqui 👁️👁️`, { reply_to_message_id: message.message_id })
-            return;
+        try {
+            const randomMeme = await this.randomMemeGetterService.execute()
+            if (!randomMeme) {
+                await this.telegramBot.sendMessage(message.chat.id, `Ih, ainda não tenho memes! Por enquanto eu ainda não posso criar memes por aqui. Mas dá uma passada lá no Discord e cria uns memes por lá! Quem sabe não aparece aqui 👁️👁️`, { reply_to_message_id: message.message_id })
+                return;
+            }
+            const result = await this.dropboxService.getImage(randomMeme.image)
+
+            this.loggerService.log(`${message?.from?.first_name} ${message?.from?.last_name} getted '${randomMeme.title}'`)
+
+            await this.telegramBot.sendPhoto(message.chat.id, result.link, { 
+                caption: this.buildMessage(randomMeme),
+                reply_to_message_id: message.message_id,
+                parse_mode: "MarkdownV2"
+            })
+        } catch(e) {
+            this.loggerService.error(e, e?.stack);
+            await this.telegramBot.sendMessage(
+                message.chat.id,
+                DeniedMessages.getRandomMessage(),
+                { reply_to_message_id: message.message_id }
+            )
         }
-        const result = await this.dropboxService.getImage(randomMeme.image)
-
-        this.loggerService.log(`${message?.from?.first_name} ${message?.from?.last_name} getted '${randomMeme.title}'`)
-
-        await this.telegramBot.sendPhoto(message.chat.id, result.link, { 
-            caption: randomMeme.description 
-                ? `\n\n⭐ Você é ${randomMeme.title}\n\n${randomMeme.description}\n\n🙎🏾 Personificou ${randomMeme.drawnTimes} pessoas`
-                : `\n\n⭐ Você é ${randomMeme.title}\n\nPersonificou ${randomMeme.drawnTimes} pessoas`,
-            reply_to_message_id: message.message_id,
-        })
     }
 }

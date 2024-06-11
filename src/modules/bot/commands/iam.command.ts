@@ -6,6 +6,7 @@ import {
 import { ClientEvents, CommandInteraction } from 'discord.js';
 import { IamCommandService } from '../services/domain/iam-command/iam-command.service';
 import { LoggerService } from 'src/modules/shared/services/logger/logger.service';
+import { DeniedMessages } from '../utils/denied-messages.utils';
 
 @Command({
   name: 'eusou',
@@ -25,23 +26,30 @@ export class IAMCommand {
   ) {
     const interaction = args[0] as CommandInteraction;
     if (!interaction.isCommand()) return;
-    console.time("Discord Command Duration")
-    this.logger.warn(`Requested in Server: ${args[0]?.guild ?? "Private"}`)
-    this.logger.log(`${args[0].user.username} requested 'eusou' command`)
 
-    await interaction.deferReply();
+    try {
+      console.time("Discord Command Duration")
+      this.logger.warn(`Requested in Server: ${args[0]?.guild ?? "Private"}`)
+      this.logger.log(`${args[0].user.username} requested 'eusou' command`)
+  
+      await interaction.deferReply();
+  
+      const iamCommandResponse = await this.iamCommandService.execute();
+      if (!iamCommandResponse) {
+        this.logger.warn("Nenhum meme foi retornado!");
+        await interaction.editReply("Ainda não possuo memes! Seja o primeiro a criar um com o comando /novomeme");
+        return;
+      }
 
-    const iamCommandResponse = await this.iamCommandService.execute();
-    if (!iamCommandResponse) {
-      this.logger.warn("Nenhum meme foi retornado!");
-      await interaction.editReply("Ainda não possuo memes! Seja o primeiro a criar um com o comando /novomeme");
-      return;
+      this.logger.log(`${args[0].user.username} getted '${iamCommandResponse.embed.toJSON().title}'`)
+      await interaction.editReply({
+        embeds: [iamCommandResponse.embed],
+        files: [iamCommandResponse.attachment]
+      });
+      console.timeEnd("Discord Command Duration")
+    } catch (e) {
+      this.logger.error(e, e?.stack)
+      await interaction.editReply(DeniedMessages.getRandomMessage());
     }
-    this.logger.log(`${args[0].user.username} getted '${iamCommandResponse.embed.toJSON().title}'`)
-    await interaction.editReply({
-      embeds: [iamCommandResponse.embed],
-      files: [iamCommandResponse.attachment]
-    });
-    console.timeEnd("Discord Command Duration")
   }
 }
