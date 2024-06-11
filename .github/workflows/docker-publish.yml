@@ -81,6 +81,17 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            BOT_TOKEN=${{ vars.BOT_TOKEN }}
+            TELEGRAM_TOKEN=${{ vars.TELEGRAM_TOKEN }}
+            DB_STUART_HOST=${{ vars.DB_STUART_HOST }}
+            DB_STUART_USER=${{ vars.DB_STUART_USER }}
+            DB_STUART_PASS=${{ vars.DB_STUART_PASS }}
+            DB_STUART_NAME=${{ vars.DB_STUART_NAME }}
+            DROPBOX_AUTH_TOKEN=${{ vars.DROPBOX_AUTH_TOKEN }}
+            DROPBOX_BASE_URL=${{ vars.DROPBOX_BASE_URL }}
+            DROPBOX_REFRESH_TOKEN=${{ vars.DROPBOX_REFRESH_TOKEN }}
+            DROPBOX_PASTE_DIRECTORY=${{ vars.DROPBOX_PASTE_DIRECTORY }}
 
       # Sign the resulting Docker image digest except on PRs.
       # This will only write to the public Rekor transparency log when the Docker
@@ -96,18 +107,17 @@ jobs:
         # This step uses the identity token to provision an ephemeral certificate
         # against the sigstore community Fulcio instance.
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
-
-  deploy:
-    runs-on: unbutu-latest
-    needs: build
-    steps:
-      - name: Deploy to Production
-        uses: easingthemes/ssh-deploy@main
-        with:
-          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
-          ARGS: "-rlgoDzvc --delete"
-          SOURCE: "dist/"
-          REMOTE_HOST: ${{ vars.REMOTE_HOST }}
-          REMOTE_USER: ${{ vars.REMOTE_USER }}
-          REMOTE_PORT: ${{ vars.REMOTE_PORT }}
-          TARGET: ${{ vars.REMOTE_TARGET }}
+  # deploy:
+  #   runs-on: unbutu-latest
+  #   needs: build
+  #   steps:
+  #     - name: Deploy to Production
+  #       uses: easingthemes/ssh-deploy@main
+  #       with:
+  #         SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
+  #         ARGS: "-rlgoDzvc --delete"
+  #         SOURCE: "dist/"
+  #         REMOTE_HOST: ${{ vars.REMOTE_HOST }}
+  #         REMOTE_USER: ${{ vars.REMOTE_USER }}
+  #         REMOTE_PORT: ${{ vars.REMOTE_PORT }}
+  #         TARGET: ${{ vars.REMOTE_TARGET }}
