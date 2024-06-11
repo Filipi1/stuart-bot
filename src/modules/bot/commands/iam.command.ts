@@ -26,7 +26,7 @@ export class IAMCommand {
     const interaction = args[0] as CommandInteraction;
     if (!interaction.isCommand()) return;
     console.time("Discord Command Duration")
-    this.logger.log(`Requested in Server: ${args[0].guild ?? "Private"}`)
+    this.logger.warn(`Requested in Server: ${args[0]?.guild ?? "Private"}`)
     this.logger.log(`${args[0].user.username} requested 'eusou' command`)
 
     await interaction.deferReply();

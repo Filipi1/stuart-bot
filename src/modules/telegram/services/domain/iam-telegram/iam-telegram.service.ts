@@ -1,11 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import TelegramBot, { Message } from 'node-telegram-bot-api';
 import { MemeEntity } from 'src/modules/meme/entities/meme.entity';
-import { RandomMemeGetterService } from 'src/modules/meme/services/domain/random-meme-getter/random-meme-getter.service';
 import { DropboxService } from 'src/modules/shared/services/dropbox/dropbox.service';
 import { LoggerService } from 'src/modules/shared/services/logger/logger.service';
 import { TelegramProviders } from 'src/modules/telegram/enums/telegram-providers.enum';
 import { TelegramCommand } from 'src/modules/telegram/interfaces/telegram-command.interface';
+import { RandomMemeGetterService } from 'src/modules/meme/services/domain/random-meme-getter/random-meme-getter.service';
 
 export interface IamTelegramResponse {
     imageUrl: string
@@ -30,6 +30,8 @@ export class IamTelegramService implements TelegramCommand {
             return;
         }
         const result = await this.dropboxService.getImage(randomMeme.image)
+
+        this.loggerService.log(`${message?.from?.first_name} ${message?.from?.last_name} getted '${randomMeme.title}'`)
 
         await this.telegramBot.sendPhoto(message.chat.id, result.link, { 
             caption: randomMeme.description 

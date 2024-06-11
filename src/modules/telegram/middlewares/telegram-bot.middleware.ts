@@ -40,7 +40,9 @@ export class TelegramMiddlewareServer extends Server implements CustomTransportS
         }
         const command = this.messageGetCommand(message)
         if (this.telegramCommands.get(command)) {
-            this.loggerService.log(message)
+            console.time("Telegram Command Duration")
+            this.loggerService.warn(`Requested in Server: ${message?.chat?.title ?? "Private"}`)
+            this.loggerService.log(`${message?.from?.first_name} ${message?.from?.last_name} requested /${command} command`)
             const handler = this.telegramCommands.get(command);
             const result = await handler(message)
             if (isObservable(result)) {
@@ -48,6 +50,7 @@ export class TelegramMiddlewareServer extends Server implements CustomTransportS
                   defaultValue: 0,
                 });
             }
+            console.timeEnd("Telegram Command Duration")
         }
     }
 

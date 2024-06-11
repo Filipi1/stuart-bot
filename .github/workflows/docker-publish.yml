@@ -99,8 +99,6 @@ jobs:
 
   deploy:
     runs-on: unbutu-latest
-    environment:
-      name: Repository
     needs: build
     steps:
       - name: Deploy to Production
@@ -111,5 +109,5 @@ jobs:
           SOURCE: "dist/"
           REMOTE_HOST: ${{ vars.REMOTE_HOST }}
           REMOTE_USER: ${{ vars.REMOTE_USER }}
-          REMOTE_PORT: ${{ vars.REMOTE_PASS }}
+          REMOTE_PORT: ${{ vars.REMOTE_PORT }}
           TARGET: ${{ vars.REMOTE_TARGET }}
