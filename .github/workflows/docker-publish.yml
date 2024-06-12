@@ -12,7 +12,7 @@ env:
   REGISTRY: ghcr.io
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
-  REGISTRY_IMAGE_NAME: ghcr.io/${{ github.repository }}:main'
+  REGISTRY_IMAGE_NAME: ghcr.io/${{ github.repository }}:main
 
 jobs:
   build:
@@ -38,7 +38,9 @@ jobs:
 
       - name: Set environment variables
         run: |
-          echo "lower_repository=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          echo "REGISTRY=ghcr.io" >> $GITHUB_ENV
+          echo "IMAGE_NAME=${{ github.repository }}" >> $GITHUB_ENV
+          lower_repository=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           echo "REGISTRY_IMAGE_NAME=$REGISTRY/$lower_repository:main" >> $GITHUB_ENV
 
       # Set up BuildKit Docker container builder to be able to build
