@@ -25,11 +25,10 @@ export class IamTelegramService implements TelegramCommand {
     }
 
     protected buildMessage(meme: MemeEntity) : string {
-        const completeTitle = `⭐ Você é ||*${meme.title}*||`
-        const completeDescription = meme.description ? `_${meme.description}_` : ""
-        const drawTimesText = `🙎🏾 Personificou *${meme.drawnTimes}* pessoa${meme.drawnTimes > 1 ? "s" : ""}`
+        const completeTitle = `⭐ Você é <b>${meme.title}</b>`
+        const completeDescription = meme.description ? `<i>${meme.description}</i>` : ""
+        const drawTimesText = `🙎🏾 Personificou <b>${meme.drawnTimes}</b> pessoa${meme.drawnTimes > 1 ? "s" : ""}`
         return `\n\n${completeTitle}\n\n${completeDescription}\n\n${drawTimesText}`
-            .replaceAll("!", "/!")
     }
 
     async execute(message: Message) : Promise<IamTelegramResponse> {
@@ -46,7 +45,7 @@ export class IamTelegramService implements TelegramCommand {
             await this.telegramBot.sendPhoto(message.chat.id, result.link, { 
                 caption: this.buildMessage(randomMeme),
                 reply_to_message_id: message.message_id,
-                parse_mode: "MarkdownV2"
+                parse_mode: "HTML"
             })
         } catch(e) {
             this.loggerService.error(e, e?.stack);
