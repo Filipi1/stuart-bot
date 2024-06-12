@@ -1,7 +1,9 @@
 import { Repository } from "typeorm";
 import { MemeEntity } from "../entities/meme.entity";
 import { InjectRepository } from "@nestjs/typeorm";
+import { Injectable } from "@nestjs/common";
 
+@Injectable()
 export class MemeRepository {
     constructor(
         @InjectRepository(MemeEntity)
