@@ -16,6 +16,7 @@ async function bootstrap() {
   });
   await app.startAllMicroservices();
 
+  loggerService.warn(`Running version v${process.env.npm_package_version}`)
   await app.listen(3000);
 }
 bootstrap();
