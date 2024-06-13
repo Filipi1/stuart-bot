@@ -10,6 +10,10 @@ export class CoachRepository {
         private readonly repository: Repository<CoachEntity>
     ) {}
 
+    async create(entity: CoachEntity) : Promise<void> {
+        await this.repository.insert(entity)
+    }
+
     async getRandomCoachMessage() : Promise<CoachEntity> {
         const result = await this.repository.createQueryBuilder()
             .select()
