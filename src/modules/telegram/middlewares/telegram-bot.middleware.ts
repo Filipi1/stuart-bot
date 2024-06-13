@@ -27,6 +27,10 @@ export class TelegramMiddlewareServer extends Server implements CustomTransportS
         }
 
         let command = message.text?.split("/")[1]
+        if (!command) {
+            return null;
+        }
+        
         if (command.includes("@")) {
             command = command.split("@")[0]
         }
