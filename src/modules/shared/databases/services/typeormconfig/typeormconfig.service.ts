@@ -27,7 +27,7 @@ export class TypeormConfigService implements TypeOrmOptionsFactory {
       port: 3306,
       entities: [join(__dirname, '../../../../**/*.entity{.ts,.js}')],
       migrations: [join(__dirname, '/migrations/*{.ts,.js}')],
-      synchronize: true,
+      synchronize: false,
     };
   }
 }
