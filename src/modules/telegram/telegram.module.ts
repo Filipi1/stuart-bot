@@ -7,6 +7,8 @@ import { TelegramBotProvider } from './providers/telegram-bot.provider';
 import { CoachController } from './controllers/coach/coach.controller';
 import { CoachTelegramService } from './services/domain/coach-telegram/coach-telegram.service';
 import { CoachModule } from '../coach/coach.module';
+import { NewCoachController } from './controllers/new-coach/new-coach.controller';
+import { NewCoachTelegramService } from './services/domain/new-coach-telegram/new-coach-telegram.service';
 
 @Module({
   imports: [
@@ -17,8 +19,9 @@ import { CoachModule } from '../coach/coach.module';
     IamTelegramService,
     TelegramMiddlewareServer,
     TelegramBotProvider,
-    CoachTelegramService
+    CoachTelegramService,
+    NewCoachTelegramService
   ],
-  controllers: [IamController, CoachController],
+  controllers: [IamController, CoachController, NewCoachController],
 })
 export class TelegramModule {}

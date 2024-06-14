@@ -3,6 +3,7 @@ import { CoachRepository } from './repositories/coach.repository';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CoachEntity } from './entities/coach.entity';
 import { GetRandomCoachMessageService } from './services/domain/get-random-coach-message/get-random-coach-message.service';
+import { CreateCoachMessageService } from './services/domain/create-coach-message/create-coach-message.service';
 
 @Module({
     imports: [
@@ -10,10 +11,12 @@ import { GetRandomCoachMessageService } from './services/domain/get-random-coach
     ],
     providers: [
         CoachRepository,
-        GetRandomCoachMessageService
+        GetRandomCoachMessageService,
+        CreateCoachMessageService
     ],
     exports: [
-        GetRandomCoachMessageService
+        GetRandomCoachMessageService,
+        CreateCoachMessageService
     ]
 })
 export class CoachModule {}

@@ -15,6 +15,8 @@ export class TypeormConfigService implements TypeOrmOptionsFactory {
     private readonly dbPass: string,
     @Inject(AppEnvironment.DB_STUART_NAME)
     private readonly dbName: string,
+    @Inject(AppEnvironment.NODE_ENV)
+    private readonly nodeEnv: string
   ) {}
 
   createTypeOrmOptions(): TypeOrmModuleOptions {    
@@ -27,7 +29,7 @@ export class TypeormConfigService implements TypeOrmOptionsFactory {
       port: 3306,
       entities: [join(__dirname, '../../../../**/*.entity{.ts,.js}')],
       migrations: [join(__dirname, '/migrations/*{.ts,.js}')],
-      synchronize: false,
+      synchronize: this.nodeEnv === "development",
     };
   }
 }
