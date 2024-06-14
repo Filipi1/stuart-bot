@@ -1,11 +1,4 @@
-version: '3.8'
-
 services:
-  stuart-bot:
-    image: <DOCKER_REPO>:${IMAGE_TAG}
-    container_name: dev_back
-    ports:
-      - <HOST_PORT>:<CONTAINER_PORT>
   stuart-db:
     image: mysql:5.7
     ports:
