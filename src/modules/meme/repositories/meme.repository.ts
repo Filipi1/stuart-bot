@@ -18,6 +18,10 @@ export class MemeRepository {
         return await this.repository.find()
     }
 
+    async getUndrawedMemesCount() : Promise<number> {
+        return await this.repository.count({ where: { drawnTimes: 0 } })
+    }
+
     async update(entity: MemeEntity) : Promise<MemeEntity> {
         await this.repository.update({ id: entity.id }, entity)
         return this.getMemeByID({ id: entity.id })
