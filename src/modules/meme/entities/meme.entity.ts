@@ -11,10 +11,10 @@ export class MemeEntity {
     @Column({ nullable: true })
     description: string
     
-    @Column()
+    @Column({ default: true })
     isActive: boolean
 
-    @Column()
+    @Column({ default: 0 })
     drawnTimes: number
 
     @Column()
