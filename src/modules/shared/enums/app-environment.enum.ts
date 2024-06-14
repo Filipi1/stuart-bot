@@ -1,4 +1,6 @@
 export enum AppEnvironment {
+    NODE_ENV = "NODE_ENV",
+
     BOT_TOKEN = "BOT_TOKEN",
     TELEGRAM_TOKEN = "TELEGRAM_TOKEN",
 
