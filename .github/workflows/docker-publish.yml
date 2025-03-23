@@ -100,4 +100,4 @@ jobs:
           password: ${{ vars.REMOTE_PASS }}
           port: ${{ vars.REMOTE_PORT }}
           script: |
-            docker pull ${{ env.REGISTRY_IMAGE_NAME }};docker stop stuart-bot;docker rm stuart-bot;docker run -d --env-file production.env --name stuart-bot ${{ env.REGISTRY_IMAGE_NAME }};
+            docker login ghcr.io -u ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }}; docker pull ${{ env.REGISTRY_IMAGE_NAME }};docker stop stuart-bot;docker rm stuart-bot;docker run -d --env-file production.env --name stuart-bot ${{ env.REGISTRY_IMAGE_NAME }};
