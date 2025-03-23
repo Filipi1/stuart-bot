@@ -22,12 +22,8 @@ export class NobodyAmCommand {
     }
 
     @Handler()
-    async onNobodyAmCommand(
-        @EventParams() args: ClientEvents['interactionCreate'],
-    ) {
-        const chatInputInteraction: ChatInputCommandInteraction = args[0] as ChatInputCommandInteraction;
-        const message = await this.nobodyamCommandService.execute()
-        await chatInputInteraction.channel.send(message);
+    async onNobodyAmCommand() {
+        return await this.nobodyamCommandService.execute()
     } catch (e) {
         this.logger.error(e, e?.stack)
     }
