@@ -6,6 +6,8 @@ import { IamCommandService } from './services/domain/iam-command/iam-command.ser
 import { MemeModule } from '../meme/meme.module';
 import { NewMemeCommandService } from './services/domain/new-meme-command/new-meme-command.service';
 import { NewMemeCommand } from './commands/new-meme.command';
+import { NobodyamCommandService } from './services/domain/nobodyam-command/nobodyam-command.service';
+import { NobodyAmCommand } from './commands/nobodyam.command';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import { NewMemeCommand } from './commands/new-meme.command';
     IAMCommand,
     NewMemeCommandService,
     NewMemeCommand,
+    NobodyAmCommand,
+    NobodyamCommandService,
     BotGateway,
   ],
   controllers: []

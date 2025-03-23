@@ -87,10 +87,12 @@ export class NewMemeCommand  {
                 buttonCollector.on('collect', async (iMessage: MessageComponentInteraction) => {
                     if (iMessage.customId === 'confirm') {
                         buttonCollector.stop()
+                        await responseMessage.delete()
                         await iMessage.update({ content: `**${authorName}**, tudo certo, estou criando seu meme...`, components: [], embeds: [] });
                         await this.memeCreatorService.execute({ title: payload.title, description: payload.description, image: image })
                         await chatInputInteraction.channel.send({ content: `✅ **${authorName}**, seu meme foi criado!`, components: [], embeds: [] });
                     } else {
+                        await responseMessage.delete()
                         await iMessage.update({ content: '🗑️ Ok, não criarei esse meme.', components: [], embeds: [] });
                         buttonCollector.stop()
                     }

@@ -29,7 +29,7 @@ export class MemeEmbedGetterService {
                     text: `Personificou ${input.drawnTimes} ${input.drawnTimes > 1 ? "pessoas" : "pessoa"}`,
                     icon_url: "https://cdn1.iconfinder.com/data/icons/ui-colored-1-of-3/100/UI_1__11-1024.png"
                 }
-            }).setImage("https://i.postimg.cc/W1n8HC1w/Meme-Place-Holder.jpg")
+            }).setImage(input.image.url)
             if (!input.isSpoiler) {
                 embed.setImage(`attachment://${imageName}`)
             }
