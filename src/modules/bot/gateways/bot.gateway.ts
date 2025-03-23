@@ -22,6 +22,10 @@ export class BotGateway {
   @Once('ready')
   async onReady() {
     this.logger.warn(`Discord Bot - ${this.client.user.tag} was started!`);
+    const commands = await this.client.application.commands.fetch()
+    commands.forEach((value) => {
+      this.logger.warn(`Discord Bot - Synced command /${value.name}`)
+    })
     const memes = await this.memeRepository.getAllMemes()
     this.client.user.setActivity(`${memes.length} memes.`, { type: ActivityType.Playing })
   }
