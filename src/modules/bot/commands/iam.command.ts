@@ -31,12 +31,12 @@ export class IAMCommand {
 
     try {
       console.time("Discord Command Duration")
-      const user = await this.getOrCreateUserService.execute({
-        identifier: args[0].user.id,
-        name: args[0].user.displayName
-      })
+      // const user = await this.getOrCreateUserService.execute({
+      //   identifier: args[0].user.id,
+      //   name: args[0].user.displayName
+      // })
       this.logger.warn(`Requested in Server: ${args[0]?.guild ?? "Private"}`)
-      this.logger.log(`${user.name} requested 'eusou' command`)
+      this.logger.log(`${args[0].user.id} - ${args[0].user.displayName} requested 'eusou' command`)
   
       await interaction.deferReply();
   
