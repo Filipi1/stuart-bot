@@ -7,6 +7,7 @@ import { ClientEvents, CommandInteraction } from 'discord.js';
 import { IamCommandService } from '../services/domain/iam-command/iam-command.service';
 import { LoggerService } from 'src/modules/shared/services/logger/logger.service';
 import { DeniedMessages } from '../utils/denied-messages.utils';
+import { GetOrCreateUserService } from 'src/modules/user/services/application/get-or-create-user/get-or-create-user.service';
 
 @Command({
   name: 'eusou',
@@ -15,6 +16,7 @@ import { DeniedMessages } from '../utils/denied-messages.utils';
 export class IAMCommand {
   constructor(
     private readonly iamCommandService: IamCommandService,
+    private readonly getOrCreateUserService: GetOrCreateUserService,
     private readonly logger: LoggerService
   ) {
     this.logger.setContext(IAMCommand.name)
@@ -29,8 +31,12 @@ export class IAMCommand {
 
     try {
       console.time("Discord Command Duration")
+      const user = await this.getOrCreateUserService.execute({
+        identifier: args[0].user.id,
+        name: args[0].user.displayName
+      })
       this.logger.warn(`Requested in Server: ${args[0]?.guild ?? "Private"}`)
-      this.logger.log(`${args[0].user.username} requested 'eusou' command`)
+      this.logger.log(`${user.name} requested 'eusou' command`)
   
       await interaction.deferReply();
   

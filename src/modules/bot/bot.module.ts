@@ -8,11 +8,13 @@ import { NewMemeCommandService } from './services/domain/new-meme-command/new-me
 import { NewMemeCommand } from './commands/new-meme.command';
 import { NobodyamCommandService } from './services/domain/nobodyam-command/nobodyam-command.service';
 import { NobodyAmCommand } from './commands/nobodyam.command';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
     DiscordModule.forFeature(),
-    MemeModule
+    MemeModule,
+    UserModule
   ],
   providers: [
     IamCommandService,

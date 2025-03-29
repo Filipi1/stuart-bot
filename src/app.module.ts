@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { MemeModule } from './modules/meme/meme.module';
 import { TelegramModule } from './modules/telegram/telegram.module';
 import { CoachModule } from './modules/coach/coach.module';
+import { UserModule } from './modules/user/user.module';
 
 @Module({
   imports: [
@@ -13,7 +14,8 @@ import { CoachModule } from './modules/coach/coach.module';
     SharedModule, 
     MemeModule, 
     TelegramModule,
-    CoachModule
+    CoachModule,
+    UserModule
   ],
   controllers: [],
   providers: [],
