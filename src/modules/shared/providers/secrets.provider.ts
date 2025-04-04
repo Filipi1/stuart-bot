@@ -7,6 +7,9 @@ export const SecretsProviders: FactoryProvider[] = Object.values(
     return {
       provide: key,
       useFactory: async (): Promise<string> => {
+        if (key.includes("URL")) {
+          console.log(`Provided ${key} : ${process.env[key]}`)
+        }
         return process.env[key];
       },
     };
