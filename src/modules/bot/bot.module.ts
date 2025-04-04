@@ -9,6 +9,8 @@ import { NewMemeCommand } from './commands/new-meme.command';
 import { NobodyamCommandService } from './services/domain/nobodyam-command/nobodyam-command.service';
 import { NobodyAmCommand } from './commands/nobodyam.command';
 import { UserModule } from '../user/user.module';
+import { ChatCommand } from './commands/chat.command';
+import { ChatCommandService } from './services/domain/chat-command/chat-command.service';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { UserModule } from '../user/user.module';
     NewMemeCommand,
     NobodyAmCommand,
     NobodyamCommandService,
+    ChatCommand,
+    ChatCommandService,
     BotGateway,
   ],
   controllers: []

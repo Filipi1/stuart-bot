@@ -10,7 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class DropboxService {
-    private authHeaders = {}
+    private readonly authHeaders = {}
 
     constructor(
         private readonly httpClientService: HttpClientService,
