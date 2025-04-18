@@ -11,6 +11,8 @@ import { NobodyAmCommand } from './commands/nobodyam.command';
 import { UserModule } from '../user/user.module';
 import { ChatCommand } from './commands/chat.command';
 import { ChatCommandService } from './services/domain/chat-command/chat-command.service';
+import { AudioMemeCommand } from './commands/audio-meme.command';
+import { AudioMemeCommandService } from './services/domain/audio-meme-command/audio-meme-command.service';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { ChatCommandService } from './services/domain/chat-command/chat-command.
     NobodyamCommandService,
     ChatCommand,
     ChatCommandService,
+    AudioMemeCommand,
+    AudioMemeCommandService,
     BotGateway,
   ],
   controllers: []

@@ -53,7 +53,7 @@ export class ChatCommand {
                 username: username
             });
 
-            await interaction.editReply({
+            await interaction.followUp({
                 content: chatResponse.response
             });
 

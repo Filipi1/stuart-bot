@@ -1,17 +1,20 @@
 # Specify the base image with Node.js, version 18, and Alpine Linux 3.18
-FROM node:18-alpine3.18
+FROM node:18-alpine
 
-USER node
+WORKDIR /app
 
-RUN mkdir -p /home/node/app
+# Instala o FFmpeg
+RUN apk add --no-cache ffmpeg
 
-WORKDIR /home/node/app
+COPY package.json yarn.lock ./
 
-COPY --chown=node:node . .
+RUN yarn install --frozen-lockfile
 
-RUN yarn
+COPY . .
 
 RUN yarn build
 
-ENV NODE_ENV=prod
+# Cria a pasta de áudios
+RUN mkdir -p /app/audios
+
 CMD ["yarn", "start:prod"]
