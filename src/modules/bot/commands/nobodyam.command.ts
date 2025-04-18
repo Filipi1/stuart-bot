@@ -1,9 +1,7 @@
 import {
     Command,
-    EventParams,
     Handler,
   } from '@discord-nestjs/core';
-  import { ChatInputCommandInteraction, ClientEvents } from 'discord.js';
   import { LoggerService } from 'src/modules/shared/services/logger/logger.service';
 import { Injectable } from '@nestjs/common';
 import { NobodyamCommandService } from '../services/domain/nobodyam-command/nobodyam-command.service';

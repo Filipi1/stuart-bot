@@ -1,8 +1,12 @@
+node_modules
+dist
 .env
+.git
+.gitignore
+README.md
+audios
+*.log
 .env-example
 .vscode/*
-node_modules
-.git
 docker-compose.yml
 docker-compose-homolog.yml
-dist

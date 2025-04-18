@@ -29,7 +29,9 @@ import { LoggerService } from './services/logger/logger.service';
                     intents: [
                         GatewayIntentBits.Guilds,
                         GatewayIntentBits.GuildMessages,
-                        GatewayIntentBits.MessageContent
+                        GatewayIntentBits.MessageContent,
+                        GatewayIntentBits.GuildVoiceStates,
+                        GatewayIntentBits.GuildMembers
                     ],
                     closeTimeout: 15000
                 },
