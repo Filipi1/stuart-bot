@@ -13,6 +13,8 @@ import { ChatCommand } from './commands/chat.command';
 import { ChatCommandService } from './services/domain/chat-command/chat-command.service';
 import { AudioMemeCommand } from './commands/audio-meme.command';
 import { AudioMemeCommandService } from './services/domain/audio-meme-command/audio-meme-command.service';
+import { ListAudiosCommand } from './commands/list-audios.command';
+import { ListAudiosService } from './services/domain/list-audios/list-audios.service';
 
 @Module({
   imports: [
@@ -32,7 +34,10 @@ import { AudioMemeCommandService } from './services/domain/audio-meme-command/au
     AudioMemeCommand,
     AudioMemeCommandService,
     BotGateway,
+    ListAudiosCommand,
+    ListAudiosService,
   ],
-  controllers: []
+  controllers: [],
+  exports: []
 })
 export class BotModule {}
