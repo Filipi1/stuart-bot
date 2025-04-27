@@ -110,5 +110,6 @@ jobs:
             docker run -d \
               --env-file production.env \
               --name stuart-bot \
+              --network bot-network \
               -v $(pwd)/audios:/app/audios \
               ${{ env.REGISTRY_IMAGE_NAME }};
