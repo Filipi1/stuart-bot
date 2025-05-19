@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import { DropboxAuthenticationResponseDTO } from './dtos/dropbox-access-token.dto';
 import { DropboxTemporaryLinkResponseDTO } from './dtos/dropbox-temporary-link-response.dto';
 import { AppEnvironment } from '../../enums/app-environment.enum';
@@ -46,44 +46,60 @@ export class DropboxService {
     }
 
     async getImage(filename: string) : Promise<DropboxTemporaryLinkResponseDTO> {
-        const directory = `/${this.dropboxPasteDirectory}/${filename}`
-        const authData = await this.authenticate()
-        const headers = {
-            "Authorization" : `Bearer ${authData.access_token}`,
-            "Content-Type": "application/json"
+        try {
+            const directory = `/${this.dropboxPasteDirectory}/${filename}`
+            const authData = await this.authenticate()
+            const headers = {
+                "Authorization" : `Bearer ${authData.access_token}`,
+                "Content-Type": "application/json"
+            }
+            const body = { "path": directory }
+            const response = await this.httpClientService.post<any, DropboxTemporaryLinkResponseDTO>(`${this.dropboxBaseUrl}/2/files/get_temporary_link`, body, { headers: headers })
+            return response
+        } catch (error) {
+            if (error instanceof ConflictException) {
+                await this.cacheManager.del('Dropbox:Authentication');
+                return this.getImage(filename);
+            }
+            throw error;
         }
-        const body = { "path": directory }
-        const response = this.httpClientService.post<any, DropboxTemporaryLinkResponseDTO>(`${this.dropboxBaseUrl}/2/files/get_temporary_link`, body, { headers: headers })
-        return response
     }
 
     async uploadImage(imageUrl: string, imageFormat: string) : Promise<DropboxUploadFileResponseDTO> {
-        const imageResponse = await this.httpClientService.get<any>(imageUrl, { responseType: "arraybuffer" })
-        const imageBytes = Buffer.from(imageResponse, 'binary')
-        const guid = uuidv4();
+        try {
+            const imageResponse = await this.httpClientService.get<any>(imageUrl, { responseType: "arraybuffer" })
+            const imageBytes = Buffer.from(imageResponse, 'binary')
+            const guid = uuidv4();
 
-        const directory = `/${this.dropboxPasteDirectory}/${guid}.${imageFormat}`
-        const authData = await this.authenticate()
-        const headers = {
-            "Authorization" : `Bearer ${authData.access_token}`,
-            "Content-Type": "application/octet-stream",
-            "Dropbox-API-Arg": JSON.stringify({
-                "autorename": false,
-                "mode": "add",
-                "mute": false,
-                "path": directory,
-                "strict_conflict": false
-            })
-        }
-
-        const response = await this.httpClientService.post<any, DropboxUploadFileResponseDTO>(
-            `https://content.dropboxapi.com/2/files/upload`, 
-            imageBytes, 
-            { 
-                headers: headers,
+            const directory = `/${this.dropboxPasteDirectory}/${guid}.${imageFormat}`
+            const authData = await this.authenticate()
+            const headers = {
+                "Authorization" : `Bearer ${authData.access_token}`,
+                "Content-Type": "application/octet-stream",
+                "Dropbox-API-Arg": JSON.stringify({
+                    "autorename": false,
+                    "mode": "add",
+                    "mute": false,
+                    "path": directory,
+                    "strict_conflict": false
+                })
             }
-        )
 
-        return response
+            const response = await this.httpClientService.post<any, DropboxUploadFileResponseDTO>(
+                `https://content.dropboxapi.com/2/files/upload`, 
+                imageBytes, 
+                { 
+                    headers: headers,
+                }
+            )
+
+            return response
+        } catch (error) {
+            if (error instanceof ConflictException) {
+                await this.cacheManager.del('Dropbox:Authentication');
+                return this.uploadImage(imageUrl, imageFormat);
+            }
+            throw error;
+        }
     }
 }
