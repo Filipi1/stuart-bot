@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { MemeEntity } from './entities/meme.entity';
 import { MemeService } from './services/domain/meme/meme.service';
 import { MemeRepository } from './repositories/meme.repository';
+import { SupabaseMemeRepository } from './repositories/supabase-meme.repository';
 import { MemeEmbedGetterService } from './services/domain/meme-embed-getter/meme-embed-getter.service';
 import { MemeCreatorService } from './services/domain/meme-creator/meme-creator.service';
 import { RandomMemeGetterService } from './services/domain/random-meme-getter/random-meme-getter.service';
@@ -11,12 +10,14 @@ import { UndrawedMemesGetterService } from './services/domain/undrawed-memes-get
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([MemeEntity]),
         DiscordModule.forFeature(),
     ],
     providers: [
         MemeService,
-        MemeRepository,
+        {
+            provide: MemeRepository,
+            useClass: SupabaseMemeRepository
+        },
         MemeEmbedGetterService,
         MemeCreatorService,
         RandomMemeGetterService,

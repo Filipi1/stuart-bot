@@ -3,15 +3,15 @@ import { CreateUserService } from './services/domain/create-user/create-user.ser
 import { GetUserService } from './services/domain/get-user/get-user.service';
 import { GetOrCreateUserService } from './services/application/get-or-create-user/get-or-create-user.service';
 import { UserRepository } from './repositories/user.repository';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserEntity } from './entities/user.entity';
+import { SupabaseUserRepository } from './repositories/supabase-user.repository';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([UserEntity])
-  ],
+  imports: [],
   providers: [
-    UserRepository,
+    {
+      provide: UserRepository,
+      useClass: SupabaseUserRepository
+    },
     CreateUserService, 
     GetUserService, 
     GetOrCreateUserService

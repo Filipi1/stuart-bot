@@ -1,6 +1,7 @@
 import { HttpService } from '@nestjs/axios';
 import {
   BadRequestException,
+  ConflictException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -63,6 +64,7 @@ export class HttpClientService {
       const { data, status } = exception.response;
       this.checkNotFoundException(status, data);
       this.checkBadRequestException(status, data);
+      this.checkConflictException(status, data);
       throw new HttpException(data, status);
     }
     throw exception;
@@ -77,6 +79,12 @@ export class HttpClientService {
   private checkBadRequestException(status: number, data): void {
     if (status === HttpStatus.BAD_REQUEST) {
       throw new BadRequestException(data);
+    }
+  }
+
+  private checkConflictException(status: number, data): void {
+    if (status === HttpStatus.CONFLICT) {
+      throw new ConflictException(data);
     }
   }
 }
