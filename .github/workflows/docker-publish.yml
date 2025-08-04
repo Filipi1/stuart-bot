@@ -145,7 +145,6 @@ jobs:
               -e OLLAMA_BASE_URL=${{ secrets.OLLAMA_BASE_URL }} \
               -e SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
               -e SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
-              --env-file production.env \
               --name stuart-bot \
               --network bot_network \
               -v $(pwd)/audios:/app/audios \
