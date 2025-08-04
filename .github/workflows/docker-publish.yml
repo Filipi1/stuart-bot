@@ -27,6 +27,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Debug Environment Secrets
+        run: |
+          if [ -z "${{ secrets.TS_OAUTH_CLIENT_ID }}" ]; then echo "❌ TS_OAUTH_CLIENT_ID vazio"; exit 1; fi
+          if [ -z "${{ secrets.TS_OAUTH_SECRET }}" ]; then echo "❌ TS_OAUTH_SECRET vazio"; exit 1; fi
+          echo "✅ Secrets do environment 'production' estão OK!"
+
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign
