@@ -104,11 +104,11 @@ jobs:
 
       # Setup Tailscale
       - name: Setup Tailscale
-        uses: tailscale/github-action@v2
+        uses: tailscale/github-action@v3
         with:
-          authkey: ${{ secrets.TS_AUTH_KEY }}
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
 
       # Get Tailscale IP of the target machine
       - name: Get Tailscale IP
@@ -148,7 +148,7 @@ jobs:
               -e DROPBOX_AUTH_TOKEN=${{ secrets.DROPBOX_AUTH_TOKEN }} \
               -e DROPBOX_BASE_URL=${{ secrets.DROPBOX_BASE_URL }} \
               -e DROPBOX_REFRESH_TOKEN=${{ secrets.DROPBOX_REFRESH_TOKEN }} \
-              -e DROPBOX_PASTE_DIRECTORY=${{ secrets.DROPBOX_PASTE_DIRECTORY }} \
+              -e DROPBOX_PASTE_DIRECTORY=${{ vars.DROPBOX_PASTE_DIRECTORY }} \
               -e OLLAMA_BASE_URL=${{ secrets.OLLAMA_BASE_URL }} \
               -e SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
               -e SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
