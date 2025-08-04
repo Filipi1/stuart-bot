@@ -13,6 +13,7 @@ env:
   REGISTRY_IMAGE_NAME: ghcr.io/${{ github.repository }}:main
 
 jobs:
+  environment: Repository
   build:
     runs-on: ubuntu-latest
     permissions:
