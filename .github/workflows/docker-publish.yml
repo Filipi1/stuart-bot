@@ -15,7 +15,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: production
+    environment: Repository
     permissions:
       contents: read
       packages: write
@@ -27,12 +27,65 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Debug Environment Secrets
-        run: |
-          if [ -z "${{ secrets.TS_OAUTH_CLIENT_ID }}" ]; then echo "❌ TS_OAUTH_CLIENT_ID vazio"; exit 1; fi
-          if [ -z "${{ secrets.TS_OAUTH_SECRET }}" ]; then echo "❌ TS_OAUTH_SECRET vazio"; exit 1; fi
-          echo "✅ Secrets do environment 'production' estão OK!"
+      # Setup Tailscale
+      - name: Setup Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
 
+      # Verify Tailscale connection
+      - name: Verify Tailscale
+        run: |
+          echo "Verifying Tailscale installation..."
+          which tailscale
+          tailscale version
+          
+          echo "Checking initial status..."
+          tailscale status || echo "Tailscale not ready yet"
+
+      # Get Tailscale IP of the target machine
+      - name: Get Tailscale IP
+        id: tailscale-ip
+        run: |
+          # Wait longer for Tailscale to fully connect
+          echo "Waiting for Tailscale to connect..."
+          sleep 30
+          
+          # Check Tailscale status
+          echo "Checking Tailscale status..."
+          tailscale status
+          
+          # Get JSON status and check if peers exist
+          echo "Getting JSON status..."
+          STATUS_JSON=$(tailscale status --json)
+          echo "Status JSON: $STATUS_JSON"
+          
+          # Check if peers exist
+          PEERS_COUNT=$(echo "$STATUS_JSON" | jq -r '.Peer | length // 0')
+          echo "Number of peers found: $PEERS_COUNT"
+          
+          if [ "$PEERS_COUNT" -eq 0 ]; then
+            echo "Error: No peers found in Tailscale network"
+            echo "Full status:"
+            tailscale status
+            exit 1
+          fi
+          
+          # Get the IP address of your target machine
+          echo "Looking for hostname: ${{ vars.TAILSCALE_HOSTNAME }}"
+          TAILSCALE_IP=$(echo "$STATUS_JSON" | jq -r '.Peer[] | select(.HostName == "${{ vars.TAILSCALE_HOSTNAME }}") | .TailscaleIPs[0]')
+          
+          if [ "$TAILSCALE_IP" = "null" ] || [ -z "$TAILSCALE_IP" ]; then
+            echo "Error: Could not find Tailscale IP for hostname '${{ vars.TAILSCALE_HOSTNAME }}'"
+            echo "Available hosts:"
+            echo "$STATUS_JSON" | jq -r '.Peer[] | .HostName + " -> " + .TailscaleIPs[0]'
+            exit 1
+          fi
+          
+          echo "TAILSCALE_IP=$TAILSCALE_IP" >> $GITHUB_ENV
+          echo "Found Tailscale IP: $TAILSCALE_IP"
+      
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign
@@ -101,33 +154,6 @@ jobs:
         # This step uses the identity token to provision an ephemeral certificate
         # against the sigstore community Fulcio instance.
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
-
-      # Setup Tailscale
-      - name: Setup Tailscale
-        uses: tailscale/github-action@v3
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-
-      # Get Tailscale IP of the target machine
-      - name: Get Tailscale IP
-        id: tailscale-ip
-        run: |
-          # Wait a moment for Tailscale to fully connect
-          sleep 10
-          # Get the IP address of your target machine
-          echo "Looking for hostname: ${{ vars.TAILSCALE_HOSTNAME }}"
-          TAILSCALE_IP=$(tailscale status --json | jq -r '.Peer[] | select(.HostName == "${{ vars.TAILSCALE_HOSTNAME }}") | .TailscaleIPs[0]')
-          
-          if [ "$TAILSCALE_IP" = "null" ] || [ -z "$TAILSCALE_IP" ]; then
-            echo "Error: Could not find Tailscale IP for hostname '${{ vars.TAILSCALE_HOSTNAME }}'"
-            echo "Available hosts:"
-            tailscale status --json | jq -r '.Peer[] | .HostName + " -> " + .TailscaleIPs[0]'
-            exit 1
-          fi
-          
-          echo "TAILSCALE_IP=$TAILSCALE_IP" >> $GITHUB_ENV
-          echo "Found Tailscale IP: $TAILSCALE_IP"
 
       - name: Deploy to Production SSH via Tailscale
         uses: appleboy/ssh-action@master
