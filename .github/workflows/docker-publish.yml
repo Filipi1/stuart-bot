@@ -15,7 +15,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: Repository
+    environment: production
     permissions:
       contents: read
       packages: write
