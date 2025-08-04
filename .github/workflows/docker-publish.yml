@@ -95,10 +95,37 @@ jobs:
         # against the sigstore community Fulcio instance.
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
 
-      - name: Deploy to Production SSH
+      # Setup Tailscale
+      - name: Setup Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+
+      # Get Tailscale IP of the target machine
+      - name: Get Tailscale IP
+        id: tailscale-ip
+        run: |
+          # Wait a moment for Tailscale to fully connect
+          sleep 10
+          # Get the IP address of your target machine
+          echo "Looking for hostname: ${{ vars.TAILSCALE_HOSTNAME }}"
+          TAILSCALE_IP=$(tailscale status --json | jq -r '.Peer[] | select(.HostName == "${{ vars.TAILSCALE_HOSTNAME }}") | .TailscaleIPs[0]')
+          
+          if [ "$TAILSCALE_IP" = "null" ] || [ -z "$TAILSCALE_IP" ]; then
+            echo "Error: Could not find Tailscale IP for hostname '${{ vars.TAILSCALE_HOSTNAME }}'"
+            echo "Available hosts:"
+            tailscale status --json | jq -r '.Peer[] | .HostName + " -> " + .TailscaleIPs[0]'
+            exit 1
+          fi
+          
+          echo "TAILSCALE_IP=$TAILSCALE_IP" >> $GITHUB_ENV
+          echo "Found Tailscale IP: $TAILSCALE_IP"
+
+      - name: Deploy to Production SSH via Tailscale
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ vars.REMOTE_HOST }}
+          host: ${{ env.TAILSCALE_IP }}
           username: ${{ vars.REMOTE_USER }}
           password: ${{ vars.REMOTE_PASS }}
           port: ${{ vars.REMOTE_PORT }}
@@ -108,6 +135,15 @@ jobs:
             docker stop stuart-bot;
             docker rm stuart-bot;
             docker run -d \
+              -e BOT_TOKEN=${{ secrets.BOT_TOKEN }} \
+              -e TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }} \
+              -e DROPBOX_AUTH_TOKEN=${{ secrets.DROPBOX_AUTH_TOKEN }} \
+              -e DROPBOX_BASE_URL=${{ secrets.DROPBOX_BASE_URL }} \
+              -e DROPBOX_REFRESH_TOKEN=${{ secrets.DROPBOX_REFRESH_TOKEN }} \
+              -e DROPBOX_PASTE_DIRECTORY=${{ secrets.DROPBOX_PASTE_DIRECTORY }} \
+              -e OLLAMA_BASE_URL=${{ secrets.OLLAMA_BASE_URL }} \
+              -e SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+              -e SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
               --env-file production.env \
               --name stuart-bot \
               --network bot_network \
