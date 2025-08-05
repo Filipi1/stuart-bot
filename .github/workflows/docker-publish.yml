@@ -94,21 +94,20 @@ jobs:
         # against the sigstore community Fulcio instance.
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
 
-      - name: Verify Secrets
+      - name: Export Tailscale secrets to env
         run: |
-          echo "Verifying Tailscale secrets..."
-          echo "TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}"
-          echo "TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}"
-
+          echo "TS_OAUTH_CLIENT_ID=${{ secrets.TS_OAUTH_CLIENT_ID }}" >> $GITHUB_ENV
+          echo "TS_OAUTH_SECRET=${{ secrets.TS_OAUTH_SECRET }}" >> $GITHUB_ENV
+      
       # Setup Tailscale
       - name: Tailscale
         uses: tailscale/github-action@v3
         env:
-          TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
+          TS_OAUTH_CLIENT_ID: ${{ env.TS_OAUTH_CLIENT_ID }}
+          TS_OAUTH_SECRET: ${{ env.TS_OAUTH_SECRET }}
         with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          oauth-client-id: ${{ env.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ env.TS_OAUTH_SECRET }}
           version: latest
 
       # Verify Tailscale connection
