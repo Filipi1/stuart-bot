@@ -17,58 +17,108 @@ jobs:
     permissions:
       contents: read
       packages: write
-      # This is used to complete the identity challenge
-      # with sigstore/fulcio when running outside of PRs.
       id-token: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
-      # Install the cosign tool except on PR
-      # https://github.com/sigstore/cosign-installer
-      - name: Install cosign
-        if: github.event_name != 'pull_request'
-        uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 #v3.5.0
+
+      # Setup Tailscale first - essential for deployment
+      - name: Setup Tailscale
+        uses: tailscale/github-action@v3
         with:
-          cosign-release: 'v2.2.4'
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          version: latest
 
-      - name: Set environment variables
+      # Wait for Tailscale to connect and verify
+      - name: Wait for Tailscale connection
+        id: wait-tailscale
         run: |
-          echo "REGISTRY=ghcr.io" >> $GITHUB_ENV
-          echo "IMAGE_NAME=${{ github.repository }}" >> $GITHUB_ENV
-          lower_repository=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          echo "REGISTRY_IMAGE_NAME=$REGISTRY/$lower_repository:main" >> $GITHUB_ENV
+          echo "Waiting for Tailscale to connect..."
+          
+          # Wait up to 2 minutes for connection
+          for i in {1..12}; do
+            echo "Attempt $i/12: Checking Tailscale status..."
+            
+            if tailscale status --json | jq -e '.Peer' > /dev/null 2>&1; then
+              echo "✅ Tailscale connected successfully!"
+              break
+            fi
+            
+            if [ $i -eq 12 ]; then
+              echo "❌ Tailscale failed to connect after 2 minutes"
+              tailscale status
+              exit 1
+            fi
+            
+            echo "Waiting 10 seconds before next attempt..."
+            sleep 10
+          done
 
-      # Set up BuildKit Docker container builder to be able to build
-      # multi-platform images and export cache
-      # https://github.com/docker/setup-buildx-action
+      # Get target machine IP early
+      - name: Get target machine IP
+        id: get-ip
+        run: |
+          echo "Looking for hostname: ${{ vars.TAILSCALE_HOSTNAME }}"
+          
+          # Get all peers
+          PEERS=$(tailscale status --json | jq -r '.Peer[] | .HostName + ":" + .TailscaleIPs[0]')
+          echo "Available peers:"
+          echo "$PEERS"
+          
+          # Find target machine
+          TARGET_IP=$(echo "$PEERS" | grep "^${{ vars.TAILSCALE_HOSTNAME }}:" | cut -d: -f2)
+          
+          if [ -z "$TARGET_IP" ]; then
+            echo "❌ Could not find IP for hostname '${{ vars.TAILSCALE_HOSTNAME }}'"
+            echo "Available hostnames:"
+            echo "$PEERS" | cut -d: -f1
+            exit 1
+          fi
+          
+          echo "✅ Found IP: $TARGET_IP"
+          echo "TAILSCALE_IP=$TARGET_IP" >> $GITHUB_ENV
+
+      # Test SSH connection before building
+      - name: Test SSH connection
+        run: |
+          echo "Testing SSH connection to ${{ env.TAILSCALE_IP }}..."
+          
+          # Test connection with timeout
+          timeout 30 ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no \
+            -p ${{ vars.REMOTE_PORT }} \
+            ${{ vars.REMOTE_USER }}@${{ env.TAILSCALE_IP }} \
+            "echo 'SSH connection successful'"
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ SSH connection test passed - ready to build and deploy"
+          else
+            echo "❌ SSH connection test failed - stopping before build"
+            exit 1
+          fi
+
+      # Build and push Docker image (only after Tailscale is confirmed)
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
+        uses: docker/setup-buildx-action@v3
 
-      # Login against a Docker registry except on PR
-      # https://github.com/docker/login-action
-      - name: Log into registry ${{ env.REGISTRY }}
+      - name: Log into registry
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Extract metadata (tags, labels) for Docker
-      # https://github.com/docker/metadata-action
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
+        uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      # Build and push Docker image with Buildx (don't push on PR)
-      # https://github.com/docker/build-push-action
       - name: Build and push Docker image
         id: build-and-push
-        uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
+        uses: docker/build-push-action@v5
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
@@ -79,90 +129,9 @@ jobs:
           platforms: linux/amd64
           build-args: |
             NODE_ENV=production
-      # Sign the resulting Docker image digest except on PRs.
-      # This will only write to the public Rekor transparency log when the Docker
-      # repository is public to avoid leaking data.  If you would like to publish
-      # transparency data even for private images, pass --force to cosign below.
-      # https://github.com/sigstore/cosign
-      - name: Sign the published Docker image
-        if: ${{ github.event_name != 'pull_request' }}
-        env:
-          # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
-          TAGS: ${{ steps.meta.outputs.tags }}
-          DIGEST: ${{ steps.build-and-push.outputs.digest }}
-        # This step uses the identity token to provision an ephemeral certificate
-        # against the sigstore community Fulcio instance.
-        run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
 
-      - name: Export Tailscale secrets to env
-        run: |
-          echo "TS_OAUTH_CLIENT_ID=${{ secrets.TS_OAUTH_CLIENT_ID }}" >> $GITHUB_ENV
-          echo "TS_OAUTH_SECRET=${{ secrets.TS_OAUTH_SECRET }}" >> $GITHUB_ENV
-      
-      # Setup Tailscale
-      - name: Tailscale
-        uses: tailscale/github-action@v3
-        env:
-          TS_OAUTH_CLIENT_ID: ${{ env.TS_OAUTH_CLIENT_ID }}
-          TS_OAUTH_SECRET: ${{ env.TS_OAUTH_SECRET }}
-        with:
-          oauth-client-id: ${{ env.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ env.TS_OAUTH_SECRET }}
-          version: latest
-
-      # Verify Tailscale connection
-      - name: Verify Tailscale
-        run: |
-          echo "Verifying Tailscale installation..."
-          which tailscale
-          tailscale version
-          
-          echo "Checking initial status..."
-          tailscale status || echo "Tailscale not ready yet"
-
-      # Get Tailscale IP of the target machine
-      - name: Get Tailscale IP
-        id: tailscale-ip
-        run: |
-          # Wait longer for Tailscale to fully connect
-          echo "Waiting for Tailscale to connect..."
-          sleep 30
-          
-          # Check Tailscale status
-          echo "Checking Tailscale status..."
-          tailscale status
-          
-          # Get JSON status and check if peers exist
-          echo "Getting JSON status..."
-          STATUS_JSON=$(tailscale status --json)
-          echo "Status JSON: $STATUS_JSON"
-          
-          # Check if peers exist
-          PEERS_COUNT=$(echo "$STATUS_JSON" | jq -r '.Peer | length // 0')
-          echo "Number of peers found: $PEERS_COUNT"
-          
-          if [ "$PEERS_COUNT" -eq 0 ]; then
-            echo "Error: No peers found in Tailscale network"
-            echo "Full status:"
-            tailscale status
-            exit 1
-          fi
-          
-          # Get the IP address of your target machine
-          echo "Looking for hostname: ${{ vars.TAILSCALE_HOSTNAME }}"
-          TAILSCALE_IP=$(echo "$STATUS_JSON" | jq -r '.Peer[] | select(.HostName == "${{ vars.TAILSCALE_HOSTNAME }}") | .TailscaleIPs[0]')
-          
-          if [ "$TAILSCALE_IP" = "null" ] || [ -z "$TAILSCALE_IP" ]; then
-            echo "Error: Could not find Tailscale IP for hostname '${{ vars.TAILSCALE_HOSTNAME }}'"
-            echo "Available hosts:"
-            echo "$STATUS_JSON" | jq -r '.Peer[] | .HostName + " -> " + .TailscaleIPs[0]'
-            exit 1
-          fi
-          
-          echo "TAILSCALE_IP=$TAILSCALE_IP" >> $GITHUB_ENV
-          echo "Found Tailscale IP: $TAILSCALE_IP"
-      
-      - name: Deploy to Production SSH via Tailscale
+      # Deploy to production
+      - name: Deploy to Production
         uses: appleboy/ssh-action@master
         with:
           host: ${{ env.TAILSCALE_IP }}
@@ -170,21 +139,42 @@ jobs:
           password: ${{ vars.REMOTE_PASS }}
           port: ${{ vars.REMOTE_PORT }}
           script: |
-            docker login ghcr.io -u ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }};
-            docker pull ${{ env.REGISTRY_IMAGE_NAME }};
-            docker stop stuart-bot;
-            docker rm stuart-bot;
+            echo "🚀 Starting deployment..."
+            
+            # Login to Docker registry
+            docker login ghcr.io -u ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }}
+            
+            # Pull latest image
+            docker pull ${{ env.REGISTRY_IMAGE_NAME }}
+            
+            # Stop and remove old container
+            docker stop stuart-bot 2>/dev/null || true
+            docker rm stuart-bot 2>/dev/null || true
+            
+            # Run new container
             docker run -d \
-              -e BOT_TOKEN=${{ secrets.BOT_TOKEN }} \
-              -e TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }} \
-              -e DROPBOX_AUTH_TOKEN=${{ secrets.DROPBOX_AUTH_TOKEN }} \
-              -e DROPBOX_BASE_URL=${{ secrets.DROPBOX_BASE_URL }} \
-              -e DROPBOX_REFRESH_TOKEN=${{ secrets.DROPBOX_REFRESH_TOKEN }} \
-              -e DROPBOX_PASTE_DIRECTORY=${{ vars.DROPBOX_PASTE_DIRECTORY }} \
-              -e OLLAMA_BASE_URL=${{ secrets.OLLAMA_BASE_URL }} \
-              -e SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
-              -e SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
+              -e BOT_TOKEN="${{ secrets.BOT_TOKEN }}" \
+              -e TELEGRAM_TOKEN="${{ secrets.TELEGRAM_TOKEN }}" \
+              -e DROPBOX_AUTH_TOKEN="${{ secrets.DROPBOX_AUTH_TOKEN }}" \
+              -e DROPBOX_BASE_URL="${{ secrets.DROPBOX_BASE_URL }}" \
+              -e DROPBOX_REFRESH_TOKEN="${{ secrets.DROPBOX_REFRESH_TOKEN }}" \
+              -e DROPBOX_PASTE_DIRECTORY="${{ vars.DROPBOX_PASTE_DIRECTORY }}" \
+              -e OLLAMA_BASE_URL="${{ secrets.OLLAMA_BASE_URL }}" \
+              -e SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
+              -e SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}" \
               --name stuart-bot \
               --network bot_network \
+              --restart unless-stopped \
               -v $(pwd)/audios:/app/audios \
-              ${{ env.REGISTRY_IMAGE_NAME }};
+              ${{ env.REGISTRY_IMAGE_NAME }}
+            
+            # Verify container is running
+            sleep 5
+            if docker ps | grep -q stuart-bot; then
+              echo "✅ Deployment successful! Container is running."
+              docker logs --tail 10 stuart-bot
+            else
+              echo "❌ Deployment failed! Container is not running."
+              docker logs stuart-bot
+              exit 1
+            fi
