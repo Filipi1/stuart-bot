@@ -1,4 +1,4 @@
-name: Continuous Integration-Continuous Deployment
+name: Deploy to Production
 
 on:
   push:
@@ -6,9 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  # Use docker.io for Docker Hub if empty
   REGISTRY: ghcr.io
-  # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
   REGISTRY_IMAGE_NAME: ghcr.io/${{ github.repository }}:main
 
@@ -96,13 +94,19 @@ jobs:
         # against the sigstore community Fulcio instance.
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
 
+      - name: Verify Secrets
+        run: |
+          echo "Verifying Tailscale secrets..."
+          echo "TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}"
+          echo "TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}"
+
       # Setup Tailscale
       - name: Tailscale
         uses: tailscale/github-action@v3
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          version: 1.66.0
+          version: latest
 
       # Verify Tailscale connection
       - name: Verify Tailscale
