@@ -8,7 +8,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  REGISTRY_IMAGE_NAME: ghcr.io/${{ github.repository }}:main
+  REGISTRY_IMAGE_NAME: ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]'):main
 
 jobs:
   build:
@@ -162,11 +162,16 @@ jobs:
           script: |
             echo "🚀 Starting deployment..."
             
+            # Fix repository name to lowercase
+            REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+            IMAGE_NAME="ghcr.io/$REPO_NAME:main"
+            echo "Using image: $IMAGE_NAME"
+            
             # Login to Docker registry
-            docker login ghcr.io -u ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }}
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             # Pull latest image
-            docker pull ${{ env.REGISTRY_IMAGE_NAME }}
+            docker pull $IMAGE_NAME
             
             # Stop and remove old container
             docker stop stuart-bot 2>/dev/null || true
@@ -187,7 +192,7 @@ jobs:
               --network bot_network \
               --restart unless-stopped \
               -v $(pwd)/audios:/app/audios \
-              ${{ env.REGISTRY_IMAGE_NAME }}
+              $IMAGE_NAME
             
             # Verify container is running
             sleep 5
@@ -196,6 +201,6 @@ jobs:
               docker logs --tail 10 stuart-bot
             else
               echo "❌ Deployment failed! Container is not running."
-              docker logs stuart-bot
+              docker logs stuart-bot 2>/dev/null || echo "No logs available"
               exit 1
             fi
