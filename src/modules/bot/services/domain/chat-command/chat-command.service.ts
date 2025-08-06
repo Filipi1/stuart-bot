@@ -39,7 +39,7 @@ export class ChatCommandService {
     async execute({ prompt, username }: ChatCommandRequest): Promise<ChatCommandResponse> {
         try {
             const response = await axios.post(`${this.ollamaBaseUrl}/api/generate`, {
-                model: "llama3",
+                model: "llama3.1:8b",
                 prompt: `${this.SYSTEM_PROMPT}\n\nLembre-se que você está falando com ${username}.\n\nUsuário ${username}: ${prompt}\nAssistente Stuart: `,
             }, {
                 responseType: 'stream'
