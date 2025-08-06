@@ -29,7 +29,7 @@ jobs:
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tag: tag:prod
+          tags: tag:prod
           version: latest
 
       # Wait for Tailscale to connect and verify
