@@ -85,23 +85,37 @@ jobs:
       - name: Test SSH connection
         run: |
           echo "Testing SSH connection to ${{ env.TAILSCALE_IP }}..."
+          echo "User: ${{ secrets.REMOTE_USER }}"
+          echo "Port: ${{ secrets.REMOTE_PORT }}"
+          echo "Password length: ${#REMOTE_PASS}"
           
           # Install sshpass for password authentication
           sudo apt-get update && sudo apt-get install -y sshpass
           
-          # Test connection with password
-          timeout 30 sshpass -p "${{ vars.REMOTE_PASS }}" ssh \
+          # Test connection with verbose output for debugging
+          timeout 30 sshpass -p "${{ secrets.REMOTE_PASS }}" ssh \
+            -v \
             -o ConnectTimeout=10 \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
-            -p ${{ vars.REMOTE_PORT }} \
-            ${{ vars.REMOTE_USER }}@${{ env.TAILSCALE_IP }} \
+            -o PasswordAuthentication=yes \
+            -o PubkeyAuthentication=no \
+            -p ${{ secrets.REMOTE_PORT }} \
+            ${{ secrets.REMOTE_USER }}@${{ env.TAILSCALE_IP }} \
             "echo 'SSH connection successful'"
           
-          if [ $? -eq 0 ]; then
+          SSH_EXIT_CODE=$?
+          
+          if [ $SSH_EXIT_CODE -eq 0 ]; then
             echo "✅ SSH connection test passed - ready to build and deploy"
           else
-            echo "❌ SSH connection test failed - stopping before build"
+            echo "❌ SSH connection test failed (exit code: $SSH_EXIT_CODE)"
+            echo "Possible issues:"
+            echo "- Wrong password"
+            echo "- Wrong username"
+            echo "- SSH service not running on target"
+            echo "- Firewall blocking connection"
+            echo "- Wrong port"
             exit 1
           fi
 
@@ -142,9 +156,9 @@ jobs:
         uses: appleboy/ssh-action@master
         with:
           host: ${{ env.TAILSCALE_IP }}
-          username: ${{ vars.REMOTE_USER }}
-          password: ${{ vars.REMOTE_PASS }}
-          port: ${{ vars.REMOTE_PORT }}
+          username: ${{ secrets.REMOTE_USER }}
+          password: ${{ secrets.REMOTE_PASS }}
+          port: ${{ secrets.REMOTE_PORT }}
           script: |
             echo "🚀 Starting deployment..."
             
