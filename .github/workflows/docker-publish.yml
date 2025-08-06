@@ -29,7 +29,7 @@ jobs:
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tag: tag:prod
+          tags: tag:prod
           version: latest
 
       # Wait for Tailscale to connect and verify
@@ -86,8 +86,14 @@ jobs:
         run: |
           echo "Testing SSH connection to ${{ env.TAILSCALE_IP }}..."
           
-          # Test connection with timeout
-          timeout 30 ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no \
+          # Install sshpass for password authentication
+          sudo apt-get update && sudo apt-get install -y sshpass
+          
+          # Test connection with password
+          timeout 30 sshpass -p "${{ vars.REMOTE_PASS }}" ssh \
+            -o ConnectTimeout=10 \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
             -p ${{ vars.REMOTE_PORT }} \
             ${{ vars.REMOTE_USER }}@${{ env.TAILSCALE_IP }} \
             "echo 'SSH connection successful'"
