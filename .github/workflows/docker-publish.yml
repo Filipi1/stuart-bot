@@ -189,7 +189,6 @@ jobs:
               -e SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
               -e SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}" \
               --name stuart-bot \
-              --network bot_network \
               --restart unless-stopped \
               -v $(pwd)/audios:/app/audios \
               $IMAGE_NAME
