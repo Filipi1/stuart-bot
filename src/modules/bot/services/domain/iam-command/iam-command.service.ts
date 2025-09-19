@@ -6,6 +6,7 @@ import { DropboxService } from 'src/modules/shared/services/dropbox/dropbox.serv
 import { LoggerService } from 'src/modules/shared/services/logger/logger.service';
 
 interface IamCommandResponse {
+    meme_id: number,
     embed: EmbedBuilder,
     attachment: AttachmentBuilder
 }
@@ -20,14 +21,15 @@ export class IamCommandService {
         this.loggerService.setContext(IamCommandService.name)
     }
 
-    async execute() : Promise<IamCommandResponse> {
-        const randomMeme = await this.randomMemeGetterService.execute()
+    async execute(userId: number) : Promise<IamCommandResponse> {
+        const randomMeme = await this.randomMemeGetterService.execute(userId)
         if (!randomMeme) {
             return;
         }
         const result = await this.dropboxService.getImage(randomMeme.image)
         const attachment = new AttachmentBuilder(result.link, { name: randomMeme.image })
         return {
+            meme_id: randomMeme.id,
             embed: new EmbedBuilder({
                 title: `Você é ${randomMeme.title}`,
                 description: randomMeme.description,

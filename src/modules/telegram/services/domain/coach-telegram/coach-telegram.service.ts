@@ -19,6 +19,20 @@ export class CoachTelegramService {
     async execute(message: Message) {
         try {
             const coach = await this.getRandomCoachMessageService.execute()
+            
+            // Add debugging to understand what's being returned
+            this.loggerService.log(`Coach result: ${JSON.stringify(coach)}`)
+            
+            if (!coach) {
+                this.loggerService.error('No coach message found in database')
+                await this.telegramBot.sendMessage(
+                    message.chat.id,
+                    "Desculpe, não há mensagens de coach disponíveis no momento.",
+                    { reply_to_message_id: message.message_id }
+                )
+                return
+            }
+            
             this.loggerService.log(`${message.from.first_name} getted "${coach.message} = ${coach.author}"`)
             await this.telegramBot.sendMessage(
                 message.chat.id, 

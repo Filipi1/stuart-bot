@@ -31,21 +31,26 @@ export class IAMCommand {
 
     try {
       console.time("Discord Command Duration")
-      // const user = await this.getOrCreateUserService.execute({
-      //   identifier: args[0].user.id,
-      //   name: args[0].user.displayName
-      // })
+      console.log(args[0].user)
+
+      
+      const user = await this.getOrCreateUserService.execute({
+        username: args[0].user.username,
+        displayName: args[0].user.globalName,
+      })
       this.logger.warn(`Requested in Server: ${args[0]?.guild ?? "Private"}`)
       this.logger.log(`${args[0].user.id} - ${args[0].user.displayName} requested 'eusou' command`)
   
       await interaction.deferReply();
   
-      const iamCommandResponse = await this.iamCommandService.execute();
+      const iamCommandResponse = await this.iamCommandService.execute(user.id);
       if (!iamCommandResponse) {
         this.logger.warn("Nenhum meme foi retornado!");
         await interaction.editReply("Ainda não possuo memes! Seja o primeiro a criar um com o comando /novomeme");
         return;
       }
+
+      
 
       this.logger.log(`${args[0].user.username} getted '${iamCommandResponse.embed.toJSON().title}'`)
       await interaction.editReply({

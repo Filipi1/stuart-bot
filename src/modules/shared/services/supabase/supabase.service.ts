@@ -12,11 +12,64 @@ export class SupabaseService {
 
         @Inject(AppEnvironment.SUPABASE_ANON_KEY)
         private readonly supabaseKey: string,
+
+        @Inject(AppEnvironment.SUPABASE_SCHEMA)
+        private readonly supabaseSchema: string,
     ) {
-        this.supabase = createClient(this.supabaseUrl, this.supabaseKey);
+        this.supabase = createClient(this.supabaseUrl, this.supabaseKey, {
+            db: {
+                schema: this.supabaseSchema
+            }
+        });
     }
 
     async query<T>(table: string, query: any = {}) {
+        // Handle random ordering as a special case
+        if (query.orderBy === 'random()') {
+            // For random ordering, we'll fetch all records and shuffle them in JavaScript
+            // This is not ideal for large datasets, but works for small to medium tables
+            let randomQuery = this.supabase.from(table).select('*');
+            
+            // Apply filters
+            if (query.where) {
+                Object.entries(query.where).forEach(([key, value]) => {
+                    randomQuery = randomQuery.eq(key, value);
+                });
+            }
+            
+            // Get all records (we'll limit after shuffling)
+            const { data, error } = await randomQuery;
+            
+            if (error) {
+                throw error;
+            }
+            
+            
+            if (!data || data.length === 0) {
+                return [];
+            }
+            
+            // Shuffle the array using Fisher-Yates algorithm
+            const shuffled = [...(data as T[])];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            
+            // Apply pagination after shuffling
+            let result = shuffled;
+            if (query.offset) {
+                result = result.slice(query.offset);
+            }
+            if (query.limit) {
+                result = result.slice(0, query.limit);
+            }
+            
+            console.log('Final shuffled result:', result);
+            return result;
+        }
+
+        // Normal query for other cases
         let supabaseQuery = this.supabase.from(table).select('*');
 
         // Aplica filtros

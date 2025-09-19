@@ -6,7 +6,7 @@ import { UserRepository } from 'src/modules/user/repositories/user.repository';
 export class GetUserService {
     constructor(private readonly userRepository: UserRepository) {}
 
-    async execute(user: Omit<UserEntity, 'id' | 'createdAt' | 'updatedAt'>) : Promise<UserEntity> {
+    async execute(user: Omit<UserEntity, 'id' | 'token' | 'createdAt' | 'updatedAt'>) : Promise<UserEntity> {
         return await this.userRepository.get_one(user)
     }
 }

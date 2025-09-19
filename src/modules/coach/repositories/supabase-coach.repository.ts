@@ -13,10 +13,27 @@ export class SupabaseCoachRepository {
     }
 
     async getRandomCoachMessage(): Promise<CoachEntity> {
-        const result = await this.supabaseService.query<CoachEntity>('coachs', {
-            orderBy: 'random()',
-            limit: 1
-        });
-        return result[0];
+        try {
+            console.log('Fetching random coach message...');
+            
+            // First, let's try a simple query without random ordering to test the connection
+            console.log('Testing simple query first...');
+            const simpleResult = await this.supabaseService.query<CoachEntity>('coachs', {
+                limit: 1
+            });
+            console.log('Simple query result:', simpleResult);
+            
+            // Now try the random query
+            const result = await this.supabaseService.query<CoachEntity>('coachs', {
+                orderBy: 'random()',
+                limit: 1
+            });
+            console.log('Random query result:', result);
+            console.log('First result:', result[0]);
+            return result[0];
+        } catch (error) {
+            console.error('Error fetching random coach message:', error);
+            throw error;
+        }
     }
 } 

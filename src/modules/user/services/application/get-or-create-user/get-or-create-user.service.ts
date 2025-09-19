@@ -10,7 +10,7 @@ export class GetOrCreateUserService {
         private readonly createUserService: CreateUserService
     ) {}
 
-    async execute(user: Omit<UserEntity, 'id' | 'createdAt' | 'updatedAt'>) : Promise<UserEntity>{
+    async execute(user: Omit<UserEntity, 'id' | 'token' | 'createdAt' | 'updatedAt'>) : Promise<UserEntity>{
         const newUser = await this.getUserService.execute(user)
         if (!newUser) {
             return await this.createUserService.execute(user)

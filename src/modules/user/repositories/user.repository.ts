@@ -10,14 +10,14 @@ export class UserRepository {
         private readonly repository: Repository<UserEntity>
     ) {}
 
-    async get_one(entity: Pick<UserEntity, 'identifier'>) : Promise<UserEntity> {
+    async get_one(entity: Pick<UserEntity, 'username'>) : Promise<UserEntity> {
         return await this.repository.findOneBy({
-            identifier: entity.identifier
+            username: entity.username
         })
     }
 
     async create(entity: UserEntity) : Promise<UserEntity> {
         await this.repository.insert(entity)
-        return this.get_one({ identifier: entity.identifier })
+        return this.get_one({ username: entity.username })
     }
 }

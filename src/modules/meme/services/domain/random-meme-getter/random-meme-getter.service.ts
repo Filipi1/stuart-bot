@@ -20,7 +20,7 @@ export class RandomMemeGetterService {
         return Math.floor(byteArray.readUInt32LE(0) / maxRange * range);
     }
 
-    async execute() : Promise<MemeEntity> {
+    async execute(userId?: number) : Promise<MemeEntity> {
         const memes = await this.memeRepository.getAllMemes()
         if (!memes || memes.length === 0) {
             this.loggerService.warn("Empty memes!")
@@ -30,13 +30,18 @@ export class RandomMemeGetterService {
         const selectedMeme = memes[randomId]
         if (!selectedMeme) {
             this.loggerService.warn(`Meme for '${randomId}' not founded, retrying...`)
-            return this.execute()
+            return this.execute(userId)
         }
         const updatedMeme = await this.memeRepository.update({
             drawnTimes: selectedMeme.drawnTimes++,
             ...selectedMeme
         })
         this.loggerService.log(`Increased drawnTimes for '${randomId}'`)
+
+        if (userId) {
+            this.loggerService.log(`Registering meme draw for '${selectedMeme.id}' for user '${userId}'`)
+            await this.memeRepository.registerMemeDraw(userId, selectedMeme.id)
+        }
         return updatedMeme
     }
 }

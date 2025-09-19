@@ -2,6 +2,7 @@ import { Repository } from "typeorm";
 import { MemeEntity } from "../entities/meme.entity";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Injectable } from "@nestjs/common";
+import { EarnedMemeEntity } from "../entities/earned-meme.entity";
 
 @Injectable()
 export class MemeRepository {
@@ -29,5 +30,12 @@ export class MemeRepository {
 
     async save(entity: MemeEntity) : Promise<MemeEntity> {
         return this.repository.save(entity)
+    }
+
+    async registerMemeDraw(userId: number, memeId: number) : Promise<EarnedMemeEntity> {
+        return await this.repository.save(EarnedMemeEntity.create({
+            memeId: memeId,
+            userId: userId
+        }))
     }
 }
